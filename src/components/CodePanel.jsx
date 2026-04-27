@@ -1,42 +1,63 @@
 import Editor from "@monaco-editor/react";
 import styles from "../styles/CodePanel.module.css";
-import { useEffect, useState } from "react";
-import { presets } from "../interpreter/presets";
+import { useRef, useState } from "react";
+import { jsDefault, htmlDefault } from "../interpreter/presets";
+import Output from "./Output";
 
 function CodePanel() {
-  const [presetSelect, setPresetSelect] = useState("Synchronous Execution");
+  const [mode, setMode] = useState(jsDefault.language);
+  const [jsCode, setJsCode] = useState(jsDefault.value);
+  const [htmlCode, setHtmlCode] = useState(htmlDefault.value);
+  const codeRef = useRef(jsDefault.value);
 
-  function changeFile(e) {
-    setPresetSelect(e.target.value);
+  function runCode() {
+    const sourceCode = codeRef.current.getValue();
+    if (!sourceCode) return;
   }
 
-  function handleEditorChange(value, Event) {
-    console.log("here is the current value: ", value);
+  function handleEditorChange(value) {
+    codeRef.current = value;
+    if (mode === jsDefault.language) setJsCode(value);
+    else setHtmlCode(value);
   }
+
+  function switchMode(next) {
+    setMode(next);
+    codeRef.current = next === jsDefault.language ? jsCode : htmlCode;
+  }
+
+  const editorValue = mode === jsDefault.language ? jsCode : htmlCode;
 
   return (
     <div className={styles.panel}>
       <div className={styles.toolbar}>
-        <span className={styles.toolbarLabel}>Preset</span>
-        <select
-          className={styles.presetSelect}
-          onChange={changeFile}
-          defaultValue='Synchronous Execution'
-        >
-          {Object.keys(presets).map((e) => (
-            <option key={e} value={e}>
-              {" "}
-              {e}{" "}
-            </option>
-          ))}
-        </select>
+        <div className={styles.modeToggle}>
+          <button
+            className={`${styles.modeBtn} ${mode === jsDefault.language ? styles.modeBtnActive : ""}`}
+            onClick={() => switchMode(jsDefault.language)}
+          >
+            JS
+          </button>
+          <button
+            className={`${styles.modeBtn} ${mode === htmlDefault.language ? styles.modeBtnActive : ""}`}
+            onClick={() => switchMode(htmlDefault.language)}
+          >
+            HTML
+          </button>
+        </div>
+
+        <button className={styles.runButton} onClick={runCode}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5,3 19,12 5,21" />
+          </svg>
+          Run
+        </button>
       </div>
 
       <div className={styles.editorWrapper}>
         <Editor
           height="100%"
-          defaultLanguage={presets["Synchronous Execution"].language}
-          defaultValue={presets["Synchronous Execution"].value}
+          language={mode}
           theme="vs-dark"
           options={{
             fontSize: 13,
@@ -46,18 +67,10 @@ function CodePanel() {
             automaticLayout: true,
           }}
           onChange={handleEditorChange}
-          value={presets[presetSelect].value}
+          value={editorValue}
         />
       </div>
-
-      <div className={styles.footer}>
-        <button className={styles.runButton}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="5,3 19,12 5,21" />
-          </svg>
-          Run
-        </button>
-      </div>
+      <Output codeRef={codeRef} />
     </div>
   );
 }
